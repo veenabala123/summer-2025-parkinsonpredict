@@ -1,0 +1,51 @@
+Symbol	Description	Category ▲ 	UniProt ID	GIFtS ▲ 	GC id ▲ 	Score ▼ 
+LRRK2	Leucine Rich Repeat Kinase 2	Protein Coding	Q5S007	62	GC12P040196	125.94
+PRKN	Parkin RBR E3 Ubiquitin Protein Ligase	Protein Coding	O60260	62	GC06M161348	106.89
+PINK1	PTEN Induced Kinase 1	Protein Coding	Q9BXM7	60	GC01P076060	105.61
+SNCA	Synuclein Alpha	Protein Coding	P37840	65	GC04M089724	99.47
+SYNJ1	Synaptojanin 1	Protein Coding	O43426	57	GC21M032628	98.41
+PARK7	Parkinsonism Associated Deglycase	Protein Coding	Q99497	60	GC01P075179	86.53
+DNAJC6	DnaJ Heat Shock Protein Family (Hsp40) Member C6	Protein Coding	O75061	55	GC01P065248	67.27
+GBA1	Glucosylceramidase Beta 1	Protein Coding	P04062	62	GC01M167453	65.30
+FBXO7	F-Box Protein 7	Protein Coding	Q9Y3I1	55	GC22P032474	61.16
+PLA2G6	Phospholipase A2 Group VI	Protein Coding	O60733	61	GC22M087757	59.60
+MAPT	Microtubule Associated Protein Tau	Protein Coding	P10636	62	GC17P045894	58.46
+UCHL1	Ubiquitin C-Terminal Hydrolase L1	Protein Coding	P09936	65	GC04P041256	57.22
+VPS35	VPS35 Retromer Complex Component	Protein Coding	Q96QK1	55	GC16M051451	56.96
+ATP13A2	ATPase Cation Transporting 13A2	Protein Coding	Q9NQ11	57	GC01M016985	51.77
+VPS13C	Vacuolar Protein Sorting 13 Homolog C	Protein Coding	Q709C8	45	GC15M061852	49.87
+GIGYF2	GRB10 Interacting GYF Protein 2	Protein Coding	Q6Y7W6	52	GC02P235033	48.25
+PRKAG2	Protein Kinase AMP-Activated Non-Catalytic Subunit Gamma 2	Protein Coding	Q9UGJ0	62	GC07M151556	47.10
+HTRA2	HtrA Serine Peptidase 2	Protein Coding	O43464	59	GC02P074529	45.30
+NR4A2	Nuclear Receptor Subfamily 4 Group A Member 2	Protein Coding	P43354	59	GC02M156324	44.50
+SNCAIP	Synuclein Alpha Interacting Protein	Protein Coding	Q9Y6H5	57	GC05P122311	43.23
+SLC6A3	Solute Carrier Family 6 Member 3	Protein Coding	Q01959	63	GC05M001392	42.68
+TH	Tyrosine Hydroxylase	Protein Coding	P07101	63	GC11M002163	41.99
+EIF4G1	Eukaryotic Translation Initiation Factor 4 Gamma 1	Protein Coding	Q04637	60	GC03P184314	40.57
+DNAJC13	DnaJ Heat Shock Protein Family (Hsp40) Member C13	Protein Coding	O75165	52	GC03P132417	39.27
+PSAP	Prosaposin	Protein Coding	P07602	61	GC10M071816	37.79
+GCH1	GTP Cyclohydrolase 1	Protein Coding	P30793	60	GC14M054842	37.72
+PACRG	Parkin Coregulated	Protein Coding	Q96M98	51	GC06P162727	37.41
+CHCHD2	Coiled-Coil-Helix-Coiled-Coil-Helix Domain Containing 2	Protein Coding	Q9Y6H1	50	GC07M080511	33.87
+POLG	DNA Polymerase Gamma, Catalytic Subunit	Protein Coding	P54098	61	GC15M163223	33.46
+COMT	Catechol-O-Methyltransferase	Protein Coding	P21964	64	GC22P019941	32.77
+ATXN2	Ataxin 2	Protein Coding	Q99700	56	GC12M111443	32.51
+TAF1	TATA-Box Binding Protein Associated Factor 1	Protein Coding	P21675	61	GC0XP071366	31.46
+ATP1A3	ATPase Na+/K+ Transporting Subunit Alpha 3	Protein Coding	P13637	61	GC19M041966	29.57
+MT-ND1	Mitochondrially Encoded NADH:Ubiquinone Oxidoreductase Core Subunit 1	Protein Coding	P03886	47	GCMTP003309	29.43
+SLC30A10	Solute Carrier Family 30 Member 10	Protein Coding	Q6XR72	54	GC01M219685	29.27
+RAB39B	RAB39B, Member RAS Oncogene Family	Protein Coding	Q96DA2	50	GC0XM155259	29.14
+PTRHD1	Peptidyl-TRNA Hydrolase Domain Containing 1	Protein Coding	Q6GMV3	47	GC02M024790	28.96
+SPG11	SPG11 Vesicle Trafficking Associated, Spatacsin	Protein Coding	Q96JI7	52	GC15M048180	28.18
+ATXN3	Ataxin 3	Protein Coding	P54252	59	GC14M124227	27.85
+TBP	TATA-Box Binding Protein	Protein Coding	P20226	62	GC06P170554	27.83
+TMEM230	Transmembrane Protein 230	Protein Coding	Q96A57	47	GC20M005200	27.45
+GRN	Granulin Precursor	Protein Coding	P28799	61	GC17P044345	27.13
+PODXL	Podocalyxin Like	Protein Coding	O00592	55	GC07M131500	26.88
+APP	Amyloid Beta Precursor Protein	Protein Coding	P05067	63	GC21M025880	26.52
+SLC18A2	Solute Carrier Family 18 Member A2	Protein Coding	Q05940	60	GC10P117241	25.97
+DDC	Dopa Decarboxylase	Protein Coding	P20711	63	GC07M050458	25.61
+TARDBP	TAR DNA Binding Protein	Protein Coding	Q13148	60	GC01P075344	25.40
+RAB29	RAB29, Member RAS Oncogene Family	Protein Coding	O14966	47	GC01M205768	25.32
+MT-ND6	Mitochondrially Encoded NADH:Ubiquinone Oxidoreductase Core Subunit 6	Protein Coding	P03923	44	GCMTM014151	25.21
+PRKRA	Protein Activator Of Interferon Induced Protein Kinase EIF2AK2	Protein Coding	O75569	54	GC02M178431	24.94
