@@ -51,7 +51,8 @@ class read_data:
         gene_matched = gene_data_diagnosis.merge(common_keys, left_on=['PATNO', 'CLINICAL_EVENT'], right_on=['PATNO', 'EVENT_ID'])
         HYS_matched = HYS_data.merge(common_keys, on=['PATNO', 'EVENT_ID'])
         
-        valid_keys = set(zip(gene_matched["PATNO"].astype(str), gene_matched["EVENT_ID"]))
+        valid_keys = set(zip(gene_matched["PATNO"].astype(str), gene_matched["EVENT_ID"], HYS_matched["NHY"]))
+        valid_lookup = {(pat, eid): nhy for (pat, eid, nhy) in valid_keys}
         
         gene_expression_path = self.input_datapath + "/Gene_expression/quant/"
         files = sorted([f for f in os.listdir(gene_expression_path) if f.startswith('PPMI-Phase1-IR3.') and f.endswith('salmon.genes.sf')])
@@ -67,7 +68,8 @@ class read_data:
             return gene_matched, HYS_matched
         
         col1 = ["PATNO", "EVENT_ID"]
-        all_column = col1 + self.gene_list
+        col2 = ["NHY"]
+        all_column = col1 + self.gene_list + col2
         gene_counts_df = pd.DataFrame(columns=all_column)
         print(len(files))
         matched_count = 0  # initialize a counter
@@ -77,16 +79,17 @@ class read_data:
             parts = filename.split('.')
             patno = parts[1]
             event_ids = parts[2]
-            if (patno, event_ids) in valid_keys:
+            if (patno, event_ids) in valid_lookup:
                 matched_count += 1  # increment the counter
-
+                nhy = valid_lookup[(patno, event_ids)]
                 fullname = os.path.join(gene_expression_path, filename)
                 
                 data_genecounts = pd.read_csv(fullname, sep='\t')
                 data_genecounts["geneID_base"] = data_genecounts["Name"].str.split('.').str[0]
                 gene_name_set = data_genecounts[data_genecounts["geneID_base"].isin(self.gene_list)]
 
-                my_row = {"PATNO": patno, "EVENT_ID": event_ids}
+                my_row = {"PATNO": patno, "EVENT_ID": event_ids, "NHY":nhy}
+
                 for gene in self.gene_list:
                     names_match = gene_name_set[gene_name_set["geneID_base"] == gene]
                     if not names_match.empty:
@@ -94,7 +97,7 @@ class read_data:
                     else:
                         my_row[gene] = 0
                 
-                gene_counts_df = pd.concat([gene_counts_df, pd.DataFrame([my_row])], ignore_index=True)
+                gene_counts_df = pd.concat([gene_counts_df, pd.DataFrame([my_row], columns=gene_counts_df.columns)], ignore_index=True)
             else:
                 unmatched_keys.append((patno, event_ids))
                 
