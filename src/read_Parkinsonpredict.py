@@ -5,11 +5,12 @@ import pandas as pd
 
 class ReadData:
     
-    def __init__(self, data_path, output_path, debugging=0, gene_list=None, *args, **kwargs):
+    def __init__(self, data_path, output_path, debugging=0, gene_list=None, write_csv = 0, *args, **kwargs):
         
         self.input_datapath = data_path
         self.output_datapath = output_path
         self.debug = debugging
+        self.write_csv = write_csv
         # If no gene list is provided, use the default top PD-related genes
         # Format: [("GeneSymbol", "EnsembleID", score), ...]
         # I am putting the following in the list:
@@ -150,7 +151,8 @@ class ReadData:
                 gene_counts_df = pd.concat([gene_counts_df, pd.DataFrame([my_row], columns=gene_counts_df.columns)], ignore_index=True)
             else:
                 unmatched_keys.append((patno, event_ids))
-                
-        gene_counts_df.to_csv(os.path.join(self.output_datapath, "gene_expression_summary.csv"), index=False)
+        
+        if self.write_csv:
+            gene_counts_df.to_csv(os.path.join(self.output_datapath, "gene_expression_summary.csv"), index=False)
         print(f"Total matched gene files with valid PATNO/EVENT_ID pairs: {matched_count}")
         return gene_counts_df,unmatched_keys
