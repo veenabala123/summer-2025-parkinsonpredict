@@ -8,13 +8,8 @@ df.replace(r"^\s*$", np.nan, regex=True, inplace=True)
 df = df.dropna()
 df = df[~(df == 101).any(axis=1)]
 
-df["ORIG_ENTRY"] = pd.to_datetime(df["ORIG_ENTRY"], format="%m/%Y")
-df = df.sort_values(["PATNO", "ORIG_ENTRY"])
-
-result = (
-    df.groupby("PATNO", group_keys=False)      # keep each PATNO’s rows together
-      .apply(lambda g: g.iloc[[0, -1]])       # first (0) and last (-1) row
-)
+columns_kept = ["PATNO","NHY","Origin_of_entry","EVENT_ID"]
+result = df.drop(columns=df.columns.difference(columns_kept))
 
 result.to_csv("clean_mds_updrs.csv", index=False)
 print(result)
