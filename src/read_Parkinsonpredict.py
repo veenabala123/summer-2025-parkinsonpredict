@@ -59,7 +59,6 @@ class ReadData:
             print("Gene metadata shape:", gene_data_diagnosis.shape)
             print("Common PATNOs found:", len(common_keys))
             print("First few matched PATNOs:", list(common_keys)[:5])
-            print("Example gene file:", files[0])
             print("Matched gene samples:", gene_matched.shape)
             print("Matched HYS samples:", HYS_matched.shape)
             return gene_matched, HYS_matched
