@@ -16,9 +16,9 @@ baseline_dfs = [mri_data_bl,gene_data_bl]
 baseline_merged = reduce(
     lambda left, right: pd.merge(
         left, right,
-        on=["PATNO", "EVENT_ID"],   # merge keys
-        how="inner",                # keep only PATNOs present in *all* tables
-        suffixes=("", "_dup")       # avoids crashing if any column names clash
+        on=["PATNO", "EVENT_ID"],   
+        how="inner",                
+        suffixes=("", "_dup")       
     ),
     baseline_dfs
 )
