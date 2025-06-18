@@ -1,6 +1,7 @@
 import os, sys
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 
 class ReadData:
@@ -156,3 +157,43 @@ class ReadData:
             gene_counts_df.to_csv(os.path.join(self.output_datapath, "gene_expression_summary.csv"), index=False)
         print(f"Total matched gene files with valid PATNO/EVENT_ID pairs: {matched_count}")
         return gene_counts_df,unmatched_keys
+
+class LoadData:
+    
+    def __init__(self,input_path, test_size=0.2, write_csv=False, output_path=None):
+        self.input_path = input_path
+        self.write_csv = write_csv
+        self.output_path = output_path
+        self.test_size = test_size
+
+    def merged_data(self):
+        data_full = pd.read_csv(os.path.join(self.input_path, 'merged_all.csv'))
+        
+        # Check if data is sorted by PATNO
+        is_sorted = data_full['PATNO'].is_monotonic_increasing
+        print("Is PATNO sorted?:", is_sorted)
+        
+        # Check for unique patients
+        unique_patients = data_full['PATNO'].nunique() == len(data_full)
+        print("Do we have all unique patients?:", "Yes" if unique_patients else "No")
+        
+        # Split features and target
+        X = data_full.drop(columns=['NHY_BL', 'NHY']) # NHY is the targer and MRIRSLT is normal/abnormal and clinically significant
+        Y_target = data_full['NHY']
+        X_train, X_test, Y_train, Y_test = train_test_split(X, Y_target, test_size=self.test_size, shuffle=False)
+        print(f"The train and test data is split according to {(1-0.2)* 100} - {(0.2)* 100}%")
+        
+        if (self.write_csv and self.output_path):
+            train_data = X_train.copy()
+            train_data['NHY'] = Y_train
+            train_data.to_csv(os.path.join(self.output_path, "train_set.csv"), index=False)
+
+            test_data = X_test.copy()
+            test_data['NHY'] = Y_test
+            test_data.to_csv(os.path.join(self.output_path, "test_set.csv"), index=False)
+
+        # Drop ID/meta columns from features before returning
+        X_train_cleaned = X_train.drop(columns=['PATNO', 'EVENT_ID', 'MRIRSLT'])
+        return X_train_cleaned, Y_train.to_frame(name='NHY')
+        
+        
