@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 from functools import reduce
 
-mri_data = pd.read_csv("Data/PDMRI_Clean_Merged_6_13_25.csv")
-gene_data = pd.read_csv("Data/gene_expression_summary.csv")
-nhy_latest = pd.read_csv("Data/clean_mds_updrs.csv")
+mri_data = pd.read_csv("/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/fomatted_data/PDMRI_Clean_Merged_6_13_25.csv")
+gene_data = pd.read_csv("/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/fomatted_data/Updated/with_clinical_data/gene_expression_summary_50.csv")
+nhy_latest = pd.read_csv("/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/fomatted_data/clean_mds_updrs.csv")
 
 mri_data_bl  = mri_data.query("EVENT_ID == 'BL'")
 gene_data_bl  = gene_data.query("EVENT_ID == 'BL'")
@@ -35,4 +35,4 @@ baseline_merged = baseline_merged.merge(nhy_latest,
 
 baseline_merged = baseline_merged[baseline_merged["NHY"].notna() & (baseline_merged["NHY"] != 101)]
 
-baseline_merged.to_csv("merged_all.csv",index=False)
+baseline_merged.to_csv("/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/fomatted_data/Updated/with_clinical_data/merged_all_50.csv",index=False)
