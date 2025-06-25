@@ -4,7 +4,7 @@ This library is designed for the Erdos Institute's data science boothcamp projec
 
 Parkinson’s disease (PD) is the second most common neurodegenerative disease, affecting over 1 million people in the United States and over 8.5 million people globally. PD rates are increasing and the diagnosis rate has doubled over the last 25 years (WHO). With no cure in sight, PD remains a complex disease with difficult to predict disease progression. Certain biomarkers, such as combinations of 𝜶-synucleins and inflammation-related biomarkers tumor necrosis factor (TNF)-𝜶 and interleukins (IL) accumulate in PD patients but complex interactions between biomarkers make using them to predict disease progression a challenge (Eidson et al. 2017; Li and Le 2020). Our project aims to utilize data science principles and machine learning to create models that predict PD from demographic, MRI, and biomarker data.
 
-This repository contains code for a project that aims to predict the progression of Parkinson's disease using machine learning techniques. The project utilizes genetic and brain imaging data to create a model that can forecast the severity of Parkinson's disease in patients. 
+This repository contains code for a project that aims to predict the progression of Parkinson's disease using machine learning techniques. The project uses data from the Parkinson’s Progression Markers Initiative (PPMI) open‑access repository. A patient’s baseline genetic profile + MRI biomarkers, is used to predict the change in MDS‑UPDRS Part III (ΔUPDRS III) (a clinically meaningful measure of motor deterioration) over a period of time.
 
 
 ## Prerequisites
