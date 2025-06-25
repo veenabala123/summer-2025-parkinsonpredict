@@ -4,10 +4,10 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
-class ReadData:
+class GeneDataReader:
     
     def __init__(self, data_path, output_path, debugging=0, gene_list=None, write_csv = 0, phaseIandII=1, genetic_cohort=1,
-                 clinical_data=1, *args, **kwargs):
+                 clinical_data=1, match_event=True, *args, **kwargs):
         
         self.input_datapath = data_path
         self.output_datapath = output_path
@@ -16,23 +16,11 @@ class ReadData:
         self.phaseIandII = phaseIandII
         self.genetic_cohort = genetic_cohort
         self.clinical_data = clinical_data
-        # If no gene list is provided, use the default top PD-related genes
-        # Format: [("GeneSymbol", "EnsembleID", score), ...]
-        # I am putting the following in the list:
-        # LRRK2,ENSG00000188906, 125.94  
-        # PRKN,ENSG00000185345, 106.89
-        # PINK1,ENSG00000158828, 105.61
-        # SNCA,ENSG00000145335, 99.47
-        # SYNJ1, ENSG00000159082, 98.41
-        # PARK7,ENSG00000116288, 86.53
-        # DNAJC6,ENSG00000116675, 67.27
-        # GBA1,ENSG00000177628, 65.3
-        # FBXO7,ENSG00000100225, 61.16
-        # PLA2G6,ENSG00000184381, 59.6
         self.gene_list = gene_list or [
             "ENSG00000188906", "ENSG00000185345", "ENSG00000158828", "ENSG00000145335", "ENSG00000159082", 
             "ENSG00000116288", "ENSG00000116675", "ENSG00000177628", "ENSG00000100225", "ENSG00000184381"
         ]
+        self.match_event = match_event
         
     def HYS_data_filtered(self):
         """Read the gene expression metadata and also the HYS metadata file
@@ -51,53 +39,25 @@ class ReadData:
             diagnosis_filter.append("Genetic Cohort")
             
         gene_data_diagnosis = gene_metadata[gene_metadata["DIAGNOSIS"].isin(diagnosis_filter)]
-        gene_metadata_renamed = gene_data_diagnosis.rename(columns={'CLINICAL_EVENT': 'EVENT_ID'})
         
-        #Step 3: Load the common (PATIENT_ID, EVENT_ID) between the MDS file and the gene metadata file
-        # Keep only common PATNO and EVENT_ID combinations
-        common_keys = pd.merge(
-            HYS_data[['PATNO', 'EVENT_ID']],
-            gene_metadata_renamed[['PATNO', 'EVENT_ID']],
-            on=['PATNO', 'EVENT_ID']
-        )
-
-        # Step 4: Now merge back to get the matched rows from each original dataframe
-        gene_matched = gene_data_diagnosis.merge(common_keys, left_on=['PATNO', 'CLINICAL_EVENT'], right_on=['PATNO', 'EVENT_ID'])
-        HYS_matched = HYS_data.merge(common_keys, on=['PATNO', 'EVENT_ID'])
-        
-        if self.debug:
-            print("HYS data shape:", HYS_data.shape)
-            print("Gene metadata shape:", gene_data_diagnosis.shape)
-            print("Common PATNOs found:", len(common_keys))
-            print("First few matched PATNOs:", list(common_keys)[:5])
-            print("Matched gene samples:", gene_matched.shape)
-            print("Matched HYS samples:", HYS_matched.shape)
-            return gene_matched, HYS_matched
-        else:
-            return gene_matched, HYS_matched
-        
-    def HYS_patno_datafiltered(self):
-        """Read the gene expression metadata and also the HYS metadata file
-
-        Returns:
-            Filtered gene_expression metadata file and also HYS_metadata file
-        """
-        #Step 1: Load the data
-        HYS_data_path = self.input_datapath + 'Diagnosis_History_UPDRS_HYS/'
-        HYS_data = pd.read_csv(HYS_data_path+"MDS-UPDRS_Part_III_03Jun2025.csv")
-        gene_metadata = pd.read_csv(self.input_datapath+'/Gene_expression/metaDataIR3.csv')
-
-        #Step 2: From the MDS file choose only the patients in the following groups
-        diagnosis_filter = ["PD", "Control", "Prodromal"]
-        if self.genetic_cohort:
-            diagnosis_filter.append("Genetic Cohort")
+        if self.match_event:
             
-        gene_data_diagnosis = gene_metadata[gene_metadata["DIAGNOSIS"].isin(diagnosis_filter)]
+            gene_metadata_renamed = gene_data_diagnosis.rename(columns={'CLINICAL_EVENT': 'EVENT_ID'})
+            #Step 3: Load the common (PATIENT_ID, EVENT_ID) between the MDS file and the gene metadata file
+            # Keep only common PATNO and EVENT_ID combinations
+            common_keys = pd.merge(
+                HYS_data[['PATNO', 'EVENT_ID']],
+                gene_metadata_renamed[['PATNO', 'EVENT_ID']],
+                on=['PATNO', 'EVENT_ID']
+            )
 
-        common_patnos = set(HYS_data['PATNO']) & set(gene_data_diagnosis['PATNO'])
-
-        HYS_matched = HYS_data[HYS_data['PATNO'].isin(common_patnos)].copy()
-        gene_matched = gene_data_diagnosis[gene_data_diagnosis['PATNO'].isin(common_patnos)].copy()
+            # Step 4: Now merge back to get the matched rows from each original dataframe
+            gene_matched = gene_data_diagnosis.merge(common_keys, left_on=['PATNO', 'CLINICAL_EVENT'], right_on=['PATNO', 'EVENT_ID'])
+            HYS_matched = HYS_data.merge(common_keys, on=['PATNO', 'EVENT_ID'])
+        else:
+            common_patnos = set(HYS_data['PATNO']) & set(gene_data_diagnosis['PATNO'])
+            HYS_matched = HYS_data[HYS_data['PATNO'].isin(common_patnos)].copy()
+            gene_matched = gene_data_diagnosis[gene_data_diagnosis['PATNO'].isin(common_patnos)].copy()
         
         if self.debug:
             print("HYS data shape:", HYS_data.shape)
@@ -111,17 +71,16 @@ class ReadData:
             return gene_matched, HYS_matched
         
         
-    def gene_expression(self, match_event=True):
+    def load_gene_expression(self):
         """Reads the gene expression data and reconstructs it in a 
         readable format. 
         currently loads only one datapoint per sample, loading the early visit.
         """
+        gene_matched, HYS_matched = self.HYS_data_filtered()
         
-        if match_event:
-            gene_matched, HYS_matched = self.HYS_data_filtered()
+        if self.match_event:
             valid_keys = set(zip(gene_matched["PATNO"], gene_matched["EVENT_ID"].str.strip()))
         else:
-            gene_matched, HYS_matched = self.HYS_patno_datafiltered()
             valid_keys = set(gene_matched["PATNO"])
         
         #Step 6: Make a list of all the gene expression files
@@ -157,7 +116,7 @@ class ReadData:
                 continue
             
             event_ids = parts[2].strip()
-            if match_event:
+            if self.match_event:
             #Step 9: Only load the files with the common keys
                 if (patno, event_ids) not in valid_keys:
                     unmatched_keys.append((patno, event_ids))
@@ -179,7 +138,7 @@ class ReadData:
             gene_name_set = data_genecounts[data_genecounts["geneID_base"].isin(self.gene_list)]
             
             #Step 13: First load the NHY data
-            if match_event:
+            if self.match_event:
                 nhy_row = HYS_matched.loc[(HYS_matched["PATNO"]==patno) & 
                                         (HYS_matched["EVENT_ID"].str.strip()==event_ids), "NHY"]
             else:
@@ -195,7 +154,7 @@ class ReadData:
             my_row = {"PATNO": patno, "EVENT_ID": event_ids, "NHY":nhy}
             
             if self.clinical_data:
-                if match_event:
+                if self.match_event:
                     gender_row = gene_matched.loc[(gene_matched["PATNO"]==patno) & 
                                 (gene_matched["EVENT_ID"].str.strip()==event_ids), "GENDER"]
                 else:
@@ -229,14 +188,69 @@ class ReadData:
         print(f"Total matched gene files with valid PATNO/EVENT_ID pairs: {matched_count}")
         return gene_counts_df,unmatched_keys
     
-class LoadData:
+
+class UPDRSReader:
+    def __init__(self, file_path, output_path=None):
+        """
+        Parameters:
+        - file_path: str, path to the raw UPDRS CSV file
+        - output_path: str or None, if given, the cleaned data will be saved here
+        """
+        self.file_path = file_path
+        self.output_path = output_path
+        self.columns_kept = ["PATNO", "NHY", "EVENT_ID"]
+        
+        def clean_udprs(self):
+            df = pd.read_csv(self.file_path, na_values=["", " ", "N/A"])
+
+            df = df.drop(columns=df.columns.difference(self.columns_kept))
+
+            df.replace(r"^\s*$", np.nan, regex=True, inplace=True)
+            df = df.dropna()
+            result = df[~(df == 101).any(axis=1)]
+            if self.output_path:
+                result.to_csv(os.path.join(self.output_path,"clean_mds_updrs.csv"), index=False)
+            return result
     
-    def __init__(self,input_path, test_size=0.2, write_csv=False, output_path=None, group_NHY=True):
-        self.input_path = input_path
+class DataSplitter:
+    def __init__(self,input_path_updrs, input_path_gene_clinical, input_clinical, test_size=0.2, write_csv=False, output_path=None, group_NHY=True, 
+                demographic_data=True, clinical_data=True, gene_data=True):
+        self.input_path_updrs = input_path_updrs
+        self.input_path_gene_clinical = input_path_gene_clinical 
         self.write_csv = write_csv
         self.output_path = output_path
         self.test_size = test_size
         self.group_NHY = group_NHY
+        self.demographic_data = demographic_data
+        self.clinical_data = clinical_data
+        self.gene_data = gene_data
+
+    def merged_data(self):
+        # --- Load data
+        mri_data = pd.read_csv(self.input_path_gene_clinical + "PDMRI_Clean_Merged_6_13_25.csv")
+        gene_data = pd.read_csv(self.input_path_gene_clinical + "gene_expression_summary.csv")
+        nhy_latest = pd.read_csv(self.input_path_updrs + "clean_mds_updrs.csv")
+        
+        
+        return X_data, Y_data
+    
+    def data_split(self):
+        
+        return X_train, Y_train, X_cv, Y_cv
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def merged_data(self):
         data_full = pd.read_csv(self.input_path)
