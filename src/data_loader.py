@@ -204,8 +204,12 @@ class UPDRSReader:
         def clean_udprs(self):
             df = pd.read_csv(self.file_path, na_values=["", " ", "N/A"])
 
-            df = df.drop(columns=df.columns.difference(self.columns_kept))
+            df["latest_data"] = pd.to_datetime(df["ORIG_ENTRY"], format="%m/%Y")
 
+            df = (df.sort_values("latest_data").drop_duplicates("PATNO", keep="last").sort_values("PATNO").reset_index(drop=True))
+
+            columns_kept = ["PATNO","NHY","EVENT_ID"]
+            df = df.drop(columns=df.columns.difference(self.columns_kept))
             df.replace(r"^\s*$", np.nan, regex=True, inplace=True)
             df = df.dropna()
             result = df[~(df == 101).any(axis=1)]
