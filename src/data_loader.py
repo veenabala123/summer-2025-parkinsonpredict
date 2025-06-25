@@ -2,7 +2,7 @@ import os, sys
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-
+from functools import reduce
 
 class GeneDataReader:
     
@@ -190,6 +190,7 @@ class GeneDataReader:
     
 
 class UPDRSReader:
+    #Converted Veena's script into a class
     def __init__(self, file_path, output_path=None):
         """
         Parameters:
@@ -212,82 +213,172 @@ class UPDRSReader:
                 result.to_csv(os.path.join(self.output_path,"clean_mds_updrs.csv"), index=False)
             return result
     
-class DataSplitter:
-    def __init__(self,input_path_updrs, input_path_gene_clinical, input_clinical, test_size=0.2, write_csv=False, output_path=None, group_NHY=True, 
-                demographic_data=True, clinical_data=True, gene_data=True):
+##Add the class for generating MRI
+class LoadData:
+    def __init__(self,input_path_updrs, input_path_gene_clinical, 
+                input_path_mri, mri_drop_list=None,  
+                group_NHY, mri_data, 
+                gene_data,
+                test_size=0.2, validation_size = 0.15,
+                write_csv=False, output_path=None,
+                stratify_splits=False,
+                *args, **kwargs):
+
         self.input_path_updrs = input_path_updrs
+        self.group_NHY = group_NHY
+        self.mri_data = mri_data
+        self.gene_data = gene_data
         self.input_path_gene_clinical = input_path_gene_clinical 
+        self.input_path_mri = input_path_mri
+        self.mri_drop_list = mri_drop_list or ["MRIRSLT", "lh_MeanThickness", 
+                                        "lh_WhiteSurfArea", "rhCerebralWhiteMatterVol", 
+                                        "lhCerebralWhiteMatterVol"]
+        self.test_size = test_size
+        self.validation_size = validation_size
+        self.stratify_splits = stratify_splits
         self.write_csv = write_csv
         self.output_path = output_path
-        self.test_size = test_size
-        self.group_NHY = group_NHY
-        self.demographic_data = demographic_data
-        self.clinical_data = clinical_data
-        self.gene_data = gene_data
+
+
+    def group_nhy(self, y):
+        y = y.copy()
+        y[y == 0] = 0
+        y[(y == 1) | (y == 2)] = 1
+        y[y > 2] = 2
+        return y.to_frame(name='NHY')
 
     def merged_data(self):
         # --- Load data
-        mri_data = pd.read_csv(self.input_path_gene_clinical + "PDMRI_Clean_Merged_6_13_25.csv")
         gene_data = pd.read_csv(self.input_path_gene_clinical + "gene_expression_summary.csv")
         nhy_latest = pd.read_csv(self.input_path_updrs + "clean_mds_updrs.csv")
         
+        clinical_data = gene_data[["PATNO", "EVENT_ID", "GENDER", "AGE", "EDUC_YRS"]]
+        clinical_data_bl = clinical_data[clinical_data["EVENT_ID"] == "BL"]
+        clinical_data_clean = clinical_data_bl[clinical_data_bl['AGE'].notna()]
         
-        return X_data, Y_data
-    
-    def data_split(self):
+        use_demographic = not self.mri_data and not self.gene_data
+        use_gene_only = self.gene_data and not self.mri_data
+        use_mri_only = self.mri_data and not self.gene_data
+        use_both = self.mri_data and self.gene_data
         
-        return X_train, Y_train, X_cv, Y_cv
+        if use_demographic:
+            data_clean = clinical_data_clean.merge(nhy_latest, how='inner', on=["PATNO"])
+            data_clean = data_clean[
+                data_clean["NHY"].notna() & (data_clean["NHY"] != 101)
+            ]
+            X_data = data_clean.drop(columns=[
+                col for col in data_clean.columns
+                if col.startswith("EVENT_ID") or col in ["PATNO", "NHY"]
+            ])
+            X_data['GENDER'] = X_data['GENDER'].map({"Female": 1, "Male": 0})
 
+            Y_data = data_clean["NHY"].copy()
+            if self.group_NHY:
+                Y_data = self.group_nhy(Y_data)
+            print(f"X shape: {X_data.shape}, Y shape: {Y_data.shape}")
+            print("Y class distribution:", Y_data.value_counts().to_dict())
+            return X_data, Y_data
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    def merged_data(self):
-        data_full = pd.read_csv(self.input_path)
+        elif use_mri_only:
+            mri_data = pd.read_csv(self.input_path_mri + "PDMRI_Clean_Merged_6_13_25.csv")
+            clinical_bl_clean = clinical_data_clean.merge(nhy_latest, how='inner', on=["PATNO"])
+            mri_data_clean = mri_data.merge(clinical_bl_clean, how='inner', on=["PATNO"])
+            mri_data_clean = mri_data_clean[
+                mri_data_clean["NHY"].notna() & (mri_data_clean["NHY"] != 101)
+            ]
+            mri_drop_base = ['PATNO', "NHY"] + self.mri_drop_list
+            X_data_mri = mri_data_clean.drop(columns=[
+                col for col in mri_data_clean.columns
+                if col.startswith("EVENT_ID") 
+                or col in mri_drop_base])
+            X_data_mri['GENDER'] = X_data_mri['GENDER'].map({"Female": 1, "Male": 0})
+            X_data = X_data_mri.copy()
+            Y_data = mri_data_clean["NHY"].copy()
+            if self.group_NHY:
+                Y_data = self.group_nhy(Y_data)
+            print(f"X shape: {X_data.shape}, Y shape: {Y_data.shape}")
+            print("Y class distribution:", Y_data.value_counts().to_dict())
+            return X_data, Y_data
         
-        # Check if data is sorted by PATNO
-        is_sorted = data_full['PATNO'].is_monotonic_increasing
-        print("Is PATNO sorted?:", is_sorted)
+        elif use_both:
+            #Adding Veena's script for merging all three datasets
+            mri_data = pd.read_csv(self.input_path_mri + "PDMRI_Clean_Merged_6_13_25.csv")
+            mri_data_bl  = mri_data.query("EVENT_ID == 'BL'")
+            gene_data_bl  = gene_data.query("EVENT_ID == 'BL'")
+            gene_data_bl = gene_data_bl[gene_data_bl["AGE"].notna()].copy()
+
+            gene_data_bl = gene_data_bl.rename(columns={"NHY": "NHY_BL"})
+
+            baseline_dfs = [mri_data_bl,gene_data_bl]
+
+            baseline_merged = reduce(
+                lambda left, right: pd.merge(
+                    left, right,
+                    on=["PATNO", "EVENT_ID"],   
+                    how="inner",                
+                    suffixes=("", "_dup")       
+                ),
+                baseline_dfs
+            )
+
+            baseline_merged = baseline_merged.drop(columns=["EVENT_ID"])
+            baseline_merged = baseline_merged.loc[:,~baseline_merged.columns.str.endswith("_dup")]
+            baseline_merged = baseline_merged.sort_values("PATNO").reset_index(drop=True)
+            baseline_merged["PATNO"] = baseline_merged["PATNO"].astype("Int64")
+
+            baseline_merged = baseline_merged.merge(nhy_latest,
+                                how = 'left',
+                                on = "PATNO",
+                                suffixes=("", "_dup"))
+
+            baseline_merged = baseline_merged[baseline_merged["NHY"].notna() & (baseline_merged["NHY"] != 101)]
+
+            mri_drop_base = ['PATNO', "NHY", "NHY_BL"] + self.mri_drop_list
+            X_data = baseline_merged.drop(columns=[
+                col for col in baseline_merged.columns
+                if col.startswith("EVENT_ID") 
+                or col in mri_drop_base])
+            
+            X_data['GENDER'] = X_data['GENDER'].map({"Female": 1, "Male": 0})
+            Y_data = baseline_merged["NHY"].copy()
+            if self.group_NHY:
+                Y_data = self.group_nhy(Y_data)
+            print(f"X shape: {X_data.shape}, Y shape: {Y_data.shape}")
+            print("Y class distribution:", Y_data.value_counts().to_dict())
+            return X_data, Y_data
+
+        elif use_gene_only:
+            raise ValueError("Data merging for gene expression + demographic data not implemented")
+
+        else:
+            raise ValueError("Wrong Flags, check the doc-string and fix it first")
         
-        # Check for unique patients
-        unique_patients = data_full['PATNO'].nunique() == len(data_full)
-        print("Do we have all unique patients?:", "Yes" if unique_patients else "No")
-        
-        # Split features and target
-        X = data_full.drop(columns=['NHY_BL', 'NHY']) # NHY is the targer and MRIRSLT is normal/abnormal and clinically significant
-        Y_target = data_full['NHY']
-        # X_train, X_test, Y_train, Y_test = train_test_split(X, Y_target, test_size=self.test_size, shuffle=False)
-        X_train, X_test, Y_train, Y_test = train_test_split(X, Y_target, test_size=self.test_size, shuffle=True, random_state=42)
-        print(f"The train and test data is split according to {(1-0.2)* 100} - {(0.2)* 100}%")
-        
+
+    def data_split(self, X_data, Y_data):
+        """
+        Splits X_data and Y_data into training, test and validation sets.
+
+        Returns:
+            X_train, Y_train, X_cv, Y_cv, X_test, Y_test
+        """
+        if (self.stratify_splits):
+            
+            assert Y_data.nunique() > 1, "Y_data has only one class — cannot stratify"
+            assert not Y_data.isnull().any(), "Y_data contains NaNs — cannot stratify"
+            
+            X_, X_test, Y_, Y_test = train_test_split(X_data, Y_data, test_size=self.test_size, stratify=Y_data, shuffle=True, random_state=42)
+            X_train, X_cv, Y_train, Y_cv = train_test_split(X_, Y_, test_size=self.validation_size, stratify=Y_, shuffle=True, random_state=42)
+        else:
+            X_, X_test, Y_, Y_test = train_test_split(X_data, Y_data, test_size=self.test_size, shuffle=True, random_state=42)
+            X_train, X_cv, Y_train, Y_cv = train_test_split(X_, Y_, test_size=self.validation_size, shuffle=True, random_state=42)
+
         if (self.write_csv and self.output_path):
-            train_data = X_train.copy()
-            train_data['NHY'] = Y_train
-            train_data.to_csv(os.path.join(self.output_path, "train_set.csv"), index=False)
+            train_data = X_.copy()
+            train_data['NHY'] = Y_
+            train_data.to_csv(os.path.join(self.output_path, "trainval_set.csv"), index=False)
 
             test_data = X_test.copy()
             test_data['NHY'] = Y_test
             test_data.to_csv(os.path.join(self.output_path, "test_set.csv"), index=False)
 
-        # Drop ID/meta columns from features before returning
-        X_train_cleaned = X_train.drop(columns=['PATNO', 'EVENT_ID', 'MRIRSLT'])
-        if (self.group_NHY):
-            print('The data is further grouped in 0 (Control), 1 (NHY = 1 and 2) and 2 (NHY > 2)')
-            Y_train_grouped = Y_train.copy()
-            Y_train_grouped[Y_train_grouped == 0] = 0
-            Y_train_grouped[(Y_train_grouped == 1) | (Y_train_grouped == 2)] = 1
-            Y_train_grouped[Y_train_grouped > 2] = 2
-            return X_train_cleaned, Y_train_grouped.to_frame(name='NHY')
-        else:
-            return X_train_cleaned, Y_train.to_frame(name='NHY')
-        
+        return X_train, Y_train, X_cv, Y_cv, X_test, Y_test
