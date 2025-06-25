@@ -1,15 +1,35 @@
 # Parkinson's disease severity prediction
 This library is designed for the Erdos Institute's data science boothcamp project.
 ## Description
-This repository contains code for a project that aims to predict the progression of Parkinson's disease using machine learning techniques. The project utilizes genetic and brain imaging data to create a model that can forecast the severity of Parkinson's disease in patients. The goal is to develop a simple AI model that can assist in early intervention and personalized treatment plans for individuals with Parkinson's disease.
-Parkinson's disease affects millions worldwide, but its progression is difficult to predict, causing problems with early intervention and personalized treatment. This project aims to create a simple AI model that predicts how Parkinson's will progress using genetic and brain imaging data.
-which aims to predict the progression of Parkinson's disease using machine learning techniques. The project utilizes genetic and brain imaging data to create a model that can forecast the severity of Parkinson's disease in patients.
+
+Parkinson's disease affects millions of senior individuals worldwide. 
+
+Parkinson’s disease is considered to have multiple causes, resulting from both genetic and nongenetic factors.
+
+Early detection of Parkinson’s disease (PD) and accurate assessment of disease progression are critical for optimizing treatment and rehabilitation.
+
+but its progression is difficult to predict, causing problems with early intervention and personalized treatment.
+
+This project aims to create a simple AI model that predicts how Parkinson's will progress using genetic and brain imaging data.
+
+This project aims to predict the progression of Parkinson's disease using machine learning techniques. 
+
+The project utilizes genetic and brain imaging data to create a model that can forecast the severity of Parkinson's disease in patients.
+
+This repository contains code for a project that aims to predict the progression of Parkinson's disease using machine learning techniques. The project utilizes genetic and brain imaging data to create a model that can forecast the severity of Parkinson's disease in patients. 
+
+
+
+
 
 ## Prerequisites
 - Python 3.x
 - Jupyter Notebook
 - Required libraries: pandas, numpy, scikit-learn, matplotlib, seaborn, tensorflow
 - Access to the Parkinson's Progression Markers Initiative (PPMI) dataset
+
+## Structure
+ Same as usage.
 
 ## Usage
 Don't have access to the data? Well talk to the PPMI.
