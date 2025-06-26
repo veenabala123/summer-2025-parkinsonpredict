@@ -23,7 +23,7 @@ class MlModels:
     A machine learning model wrapper supporting logistic regression, XGBoost, and neural networks.
     
     Args:
-        model_name (str): One of ['logistic', 'logistic_cv', 'xgboost', 'neural_networks'].
+        model_name (str): One of ['logistic', 'logistic_cv', 'xgboost', 'neural_networks','random_forest].
         data (dict): Dictionary with keys 'X_train' and 'Y_train'.
         params (dict): Model-specific hyperparameters.
         pca_flag (bool): Whether to apply PCA after scaling.
@@ -92,6 +92,10 @@ class MlModels:
                                         max_iter=1000, 
                                         class_weight=self.class_weights,
                                         **self.params)
+
+        elif self.model_name == 'random_forest':
+            model = RandomForestClassifier(class_weight=self.class_weights,
+                                           **self.params)
             
         elif self.model_name == 'xgboost':
             model = XGBClassifier(**self.params)
