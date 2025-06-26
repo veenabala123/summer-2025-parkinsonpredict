@@ -1,3 +1,13 @@
+"""
+gene_matrix.py
+
+Making a gene matrix from the counts with 50000 genes
+Retaining all the genes and selecting 100 individuals each from different NHY group
+
+Author: Pushpita Das
+Date: June 2025
+"""
+
 import os,sys
 import math
 
@@ -11,35 +21,48 @@ from matplotlib import animation
 import seaborn as sns
 from tqdm import tqdm
 
-sys.path.append("../src")  # adjust path as needed
-from read_Parkinsonpredict import ReadData, LoadData
-
 
 # === Path setup ===
-path = '/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/fomatted_data/Updated/only_patno/'
+path = '/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/finalised_dataset_updated/'
 HYS_data_path = '/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/Diagnosis_History_UPDRS_HYS'
 input_datapath = '/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/'
 output_datapath = '/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/fomatted_data/Updated/'
 
 # === Load data ===
-data_gene = pd.read_csv(path + "gene_expression_summary.csv")
+data_gene = pd.read_csv(input_datapath + '/Gene_expression/metaDataIR3.csv')
 HYS_data = pd.read_csv(HYS_data_path+"/MDS-UPDRS_Part_III_03Jun2025.csv")
 gene_expression_path = input_datapath + "/Gene_expression/quant/"
 
-# === Select baseline gene expression ===
-data_gene_BL = data_gene[data_gene["EVENT_ID"] == 'BL']
-print(f'Printing the shapes for whole Genomic Dataset {data_gene.shape},'+'\n'+ f'Shape of the Baseline data {data_gene_BL.shape}')
-# === Get all salmon gene files ===
-files = sorted([f for f in os.listdir(gene_expression_path) 
-                if (f.startswith('PPMI-Phase1-IR3.') or f.startswith('PPMI-Phase2-IR3.')) 
-                and f.endswith('salmon.genes.sf')])
+# === Step 1: Filter gene metadata for baseline and selected diagnoses ===
+diagnosis_filter = ["PD", "Control", "Prodromal", "Genetic Cohort"]
+data_gene_BL = data_gene[
+    (data_gene["DIAGNOSIS"].isin(diagnosis_filter)) &
+    (data_gene["CLINICAL_EVENT"] == 'BL')
+].copy()
 
-# === Match patient IDs between gene and NHY datasets ===
-common_patnos = set(HYS_data['PATNO']) & set(data_gene_BL['PATNO'])
-HYS_matched = HYS_data[HYS_data['PATNO'].isin(common_patnos)].copy()
-gene_matched = data_gene_BL[data_gene_BL['PATNO'].isin(common_patnos)].copy()
-print(f'Printing the shapes for Genomic data {data_gene_BL.shape},'+'\n'+ f'Shape of the HYS Dataset {HYS_data.shape}')
-print(f'Printing the shapes for Genomic data (common PATNO) {gene_matched.shape},'+'\n'+ f'Shape of the HYS Dataset (common PATNO) {HYS_matched.shape}')
+# === Step 2: Keep only PATNOs with valid salmon gene files ===
+def extract_patno(filename):
+    parts = filename.split('.')
+    return int(parts[1]) if len(parts) > 2 and parts[1].isdigit() else None
+
+files = sorted([
+    f for f in os.listdir(gene_expression_path)
+    if (f.startswith('PPMI-Phase1-IR3.') or f.startswith('PPMI-Phase2-IR3.')) and f.endswith('salmon.genes.sf')
+])
+valid_patnos_from_files = {extract_patno(f) for f in files if extract_patno(f) is not None}
+data_gene_BL = data_gene_BL[data_gene_BL["PATNO"].isin(valid_patnos_from_files)].copy()
+
+
+# === Step 4: Final matched subset between gene and HYS ===
+common_patnos = set(data_gene_BL["PATNO"]) & set(HYS_data["PATNO"])
+gene_matched = data_gene_BL[data_gene_BL["PATNO"].isin(common_patnos)].copy()
+HYS_matched = HYS_data[HYS_data["PATNO"].isin(common_patnos)].copy()
+
+# === Reporting shapes ===
+print(f"Original genomic metadata: {data_gene.shape}")
+print(f"Filtered baseline gene data: {data_gene_BL.shape}")
+print(f"Matched gene data: {gene_matched.shape}")
+print(f"Matched HYS data: {HYS_matched.shape}")
 
 # === Sort NHY visits and get first/last visit per patient ===
 HYS_matched['LAST_UPDATE'] = pd.to_datetime(HYS_matched['LAST_UPDATE'], errors='coerce')
@@ -59,6 +82,7 @@ selected_patnos3 = patno_nhy_small['PATNO'].sample(n=100, random_state=42)
 
 patno_set = pd.concat([selected_patnos1, selected_patnos2, selected_patnos3]).reset_index(drop=True)
 valid_keys_patno = set(patno_set)
+
 
 # === Use first file to get gene ensemble IDs (column names) ===
 first_file = files[0]
@@ -90,7 +114,10 @@ for filename in tqdm(files, desc="Processing files"):
     
     fullname = os.path.join(gene_expression_path, filename)
     data_genecounts = pd.read_csv(fullname, sep='\t')
-    gene_TPM_map = dict(zip(data_genecounts["Name"].str.split('.').str[0], data_genecounts["TPM"]))
+    data_genecounts["gene_base"] = data_genecounts["Name"].str.split('.').str[0]
+    gene_TPM_map = dict(zip(data_genecounts["gene_base"], data_genecounts["TPM"]))
+
+    # gene_TPM_map = dict(zip(data_genecounts["Name"].str.split('.').str[0], data_genecounts["TPM"]))
 
     # Fill gene values for this row
     for gene_id in gene_ensemble_IDs:
@@ -100,5 +127,5 @@ for filename in tqdm(files, desc="Processing files"):
 print("✓ Done")
 
 # === Save matrix ===
-output_path = os.path.join(output_datapath, "gene_matrix.csv")
+output_path = os.path.join(output_datapath, "gene_matrix_genemeta_MDS-UPDRS.csv")
 gene_matrix.to_csv(output_path, index=False)
