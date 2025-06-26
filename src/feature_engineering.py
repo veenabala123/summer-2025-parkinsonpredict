@@ -1,3 +1,12 @@
+"""
+feature_engineering.py
+
+Evaluation utilities for trained models.
+
+Author: Pushpita Das
+Date: June 2025
+"""
+
 import os, sys
 import numpy as np
 import pandas as pd

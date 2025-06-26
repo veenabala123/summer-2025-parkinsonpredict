@@ -1,3 +1,13 @@
+"""
+data_loader.py
+
+Data processing and loading classes.
+
+Author: Pushpita Das
+        Also assimilated Veena's script to merge the datafiles
+Date: June 2025
+"""
+
 import os, sys
 import numpy as np
 import pandas as pd
@@ -216,8 +226,8 @@ class UPDRSReader:
             if self.output_path:
                 result.to_csv(os.path.join(self.output_path,"clean_mds_updrs.csv"), index=False)
             return result
-    
 ##Add the class for generating MRI
+
 class LoadData:
     def __init__(self,input_path_updrs, input_path_gene_clinical, 
                 input_path_mri, mri_data,
@@ -392,6 +402,11 @@ class LoadData:
         Returns:
             X_train, Y_train, X_cv, Y_cv, X_test, Y_test
         """
+        # Ensure Y_data is a Series
+        if isinstance(Y_data, pd.DataFrame):
+            assert Y_data.shape[1] == 1, "Expected Y_data to have only one column"
+            Y_data = Y_data.iloc[:, 0]  # Convert to Series
+        
         if (self.stratify_splits):
             
             assert Y_data.nunique() > 1, "Y_data has only one class — cannot stratify"

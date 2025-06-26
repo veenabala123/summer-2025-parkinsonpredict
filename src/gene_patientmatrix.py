@@ -1,3 +1,13 @@
+"""
+gene_matrix.py
+
+Making a gene matrix from the counts with 50000 genes
+Retaining all the genes and selecting 100 individuals each from different NHY group
+
+Author: Pushpita Das
+Date: June 2025
+"""
+
 import os,sys
 import math
 
