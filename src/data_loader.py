@@ -231,7 +231,8 @@ class UPDRSReader:
 class LoadData:
     def __init__(self,input_updrs, input_gene_clinical, 
                 input_mri, mri_data,
-                mri_drop_list=None, group_NHY=True, 
+                mri_drop_list=None, group_NHY=True,
+                group_binary=False,
                 gene_data=True, common_dataset=True,
                 test_size=0.2, validation_size = 0.15,
                 write_csv=False, output_path=None,
@@ -241,6 +242,7 @@ class LoadData:
 
         self.input_updrs = input_updrs
         self.group_NHY = group_NHY
+        self.group_binary = group_binary
         self.mri_data = mri_data
         self.gene_data = gene_data
         self.input_gene_clinical = input_gene_clinical
@@ -258,10 +260,16 @@ class LoadData:
 
 
     def group_nhy(self, y):
-        y = y.copy()
-        y[y == 0] = 0
-        y[(y == 1) | (y == 2)] = 1
-        y[y > 2] = 2
+
+        if self.group_binary:
+            y = y.copy()
+            y[y == 0] = 0
+            y[y > 1] = 1
+        else:
+            y = y.copy()
+            y[y == 0] = 0
+            y[(y == 1) | (y == 2)] = 1
+            y[y > 2] = 2
         return y.to_frame(name='NHY')
 
     def merged_data(self):
