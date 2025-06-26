@@ -20,7 +20,7 @@ from sklearn.utils.class_weight import compute_sample_weight
 
 class MlModels:
     """
-    A flexible machine learning model wrapper supporting logistic regression, XGBoost, and neural networks.
+    A machine learning model wrapper supporting logistic regression, XGBoost, and neural networks.
     
     Args:
         model_name (str): One of ['logistic', 'logistic_cv', 'xgboost', 'neural_networks'].

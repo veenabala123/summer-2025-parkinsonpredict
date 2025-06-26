@@ -229,22 +229,23 @@ class UPDRSReader:
 ##Add the class for generating MRI
 
 class LoadData:
-    def __init__(self,input_path_updrs, input_path_gene_clinical, 
-                input_path_mri, mri_data,
+    def __init__(self,input_updrs, input_gene_clinical, 
+                input_mri, mri_data,
                 mri_drop_list=None, group_NHY=True, 
                 gene_data=True, common_dataset=True,
                 test_size=0.2, validation_size = 0.15,
                 write_csv=False, output_path=None,
                 stratify_splits=False,
+                print_column_names=False,
                 *args, **kwargs):
 
-        self.input_path_updrs = input_path_updrs
+        self.input_updrs = input_updrs
         self.group_NHY = group_NHY
         self.mri_data = mri_data
         self.gene_data = gene_data
-        self.input_path_gene_clinical = input_path_gene_clinical
+        self.input_gene_clinical = input_gene_clinical
         self.common_dataset = common_dataset
-        self.input_path_mri = input_path_mri
+        self.input_mri = input_mri
         self.mri_drop_list = mri_drop_list or ["MRIRSLT", "lh_MeanThickness", 
                                         "lh_WhiteSurfArea", "rhCerebralWhiteMatterVol", 
                                         "lhCerebralWhiteMatterVol"]
@@ -253,6 +254,7 @@ class LoadData:
         self.stratify_splits = stratify_splits
         self.write_csv = write_csv
         self.output_path = output_path
+        self.print_cols = print_column_names
 
 
     def group_nhy(self, y):
@@ -264,8 +266,8 @@ class LoadData:
 
     def merged_data(self):
         # --- Load data
-        gene_data = pd.read_csv(self.input_path_gene_clinical + "gene_expression_summary.csv")
-        nhy_latest = pd.read_csv(self.input_path_updrs + "clean_mds_updrs.csv")
+        gene_data = pd.read_csv(self.input_gene_clinical)
+        nhy_latest = pd.read_csv(self.input_updrs)
         
         use_demographic = not self.mri_data and not self.gene_data and not self.common_dataset
         use_gene_only = self.gene_data and not self.mri_data and not self.common_dataset
@@ -301,7 +303,7 @@ class LoadData:
 
         elif use_mri_only:
 
-            mri_data = pd.read_csv(self.input_path_mri + "PDMRI_Clean_Merged_6_13_25.csv")
+            mri_data = pd.read_csv(self.input_mri)
 
             clinical_data = gene_data[["PATNO", "EVENT_ID", "GENDER", "AGE", "EDUC_YRS"]]
             clinical_data_bl = clinical_data[clinical_data["EVENT_ID"] == "BL"]
@@ -328,7 +330,7 @@ class LoadData:
         
         elif self.common_dataset:
 
-            mri_data = pd.read_csv(self.input_path_mri + "PDMRI_Clean_Merged_6_13_25.csv")
+            mri_data = pd.read_csv(self.input_mri)
         
             mri_data_bl  = mri_data.query("EVENT_ID == 'BL'")
             gene_data_bl  = gene_data.query("EVENT_ID == 'BL'")
@@ -372,20 +374,29 @@ class LoadData:
                 Y_data = self.group_nhy(Y_data)
             print(f"X shape: {X_data_all.shape}, Y shape: {Y_data.shape}")
             print("Y class distribution:", Y_data.value_counts().to_dict())
-            
+
             if use_demographic_commondata:
                 X_data = X_data_all[["GENDER", "AGE", "EDUC_YRS"]]
                 Y_data = Y_data
+                if self.print_cols:
+                    X_data.columns.to_series().to_csv("debug_columns_demographic.csv", index=False)
                 return X_data, Y_data
-            
+
             elif use_mri_only_commondata:
-                mri_cols = [col for col in mri_data.columns if col not in self.mri_drop_list]
+                mri_cols = [col for col in mri_data.columns
+                            if col not in self.mri_drop_list 
+                            and col not in ['PATNO', 'EVENT_ID']]
+                print(mri_cols)
                 columns_load = ["GENDER", "AGE", "EDUC_YRS"] + mri_cols
                 X_data = X_data_all[columns_load]
+                if self.print_cols:
+                    X_data.columns.to_series().to_csv("debug_columns_mri.csv", index=False)
                 return X_data, Y_data
                         
             elif use_all:
                 X_data = X_data_all
+                if self.print_cols:
+                    X_data_all.columns.to_series().to_csv("debug_columns_all.csv", index=False)
                 return X_data, Y_data
 
         elif use_gene_only:
