@@ -1,104 +1,185 @@
-import os,sys
-import math
-
+import os, sys
 import numpy as np
-import scipy as sp
 import pandas as pd
-import matplotlib as mlt
+from sklearn.feature_selection import SelectKBest, f_classif, chi2, SelectFromModel, RFE
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression, LogisticRegressionCV
 import matplotlib.pyplot as plt
-from IPython.display import HTML
-from matplotlib import animation
 import seaborn as sns
-from tqdm import tqdm
 
-sys.path.append("../src")  # adjust path as needed
-from read_Parkinsonpredict import ReadData, LoadData
+class Feature_selection:
+    def __init__(self, data, grouped_y,
+                selection_method='kbest', 
+                k = 100, alpha=0.05, 
+                random_state=42,
+                **kwargs):
 
+        self.selection_method = selection_method
+        self.k = k
+        self.alpha = alpha
+        self.random_state = random_state
+        self.selected_genes = None
+        self.selector = None
+        self.X_data = data.drop(columns=["PATNO", "EVENT_ID", "NHY"])
+        self.Y_data = data["NHY"]
+        self.grouped_y = grouped_y
+        
+        sparsity = (self.X_data == 0).mean().mean()
+        print(f"Sparsity: {sparsity:.2%}")
+        
+        if self.grouped_y:
+            Y_data_grouped = self.Y_data.copy()
+            Y_data_grouped[Y_data_grouped == 0] = 0
+            Y_data_grouped[(Y_data_grouped == 1) | (Y_data_grouped == 2)] = 1
+            Y_data_grouped[Y_data_grouped > 2] = 2
+        
+        # X_data is (n_samples, n_genes), entries are TPM counts
+        threshold_count = 5
+        threshold_fraction = 0.10
 
-# === Path setup ===
-path = '/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/fomatted_data/Updated/only_patno/'
-HYS_data_path = '/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/Diagnosis_History_UPDRS_HYS'
-input_datapath = '/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/'
-output_datapath = '/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/fomatted_data/Updated/'
-
-# === Load data ===
-data_gene = pd.read_csv(path + "gene_expression_summary.csv")
-HYS_data = pd.read_csv(HYS_data_path+"/MDS-UPDRS_Part_III_03Jun2025.csv")
-gene_expression_path = input_datapath + "/Gene_expression/quant/"
-
-# === Select baseline gene expression ===
-data_gene_BL = data_gene[data_gene["EVENT_ID"] == 'BL']
-print(f'Printing the shapes for whole Genomic Dataset {data_gene.shape},'+'\n'+ f'Shape of the Baseline data {data_gene_BL.shape}')
-# === Get all salmon gene files ===
-files = sorted([f for f in os.listdir(gene_expression_path) 
-                if (f.startswith('PPMI-Phase1-IR3.') or f.startswith('PPMI-Phase2-IR3.')) 
-                and f.endswith('salmon.genes.sf')])
-
-# === Match patient IDs between gene and NHY datasets ===
-common_patnos = set(HYS_data['PATNO']) & set(data_gene_BL['PATNO'])
-HYS_matched = HYS_data[HYS_data['PATNO'].isin(common_patnos)].copy()
-gene_matched = data_gene_BL[data_gene_BL['PATNO'].isin(common_patnos)].copy()
-print(f'Printing the shapes for Genomic data {data_gene_BL.shape},'+'\n'+ f'Shape of the HYS Dataset {HYS_data.shape}')
-print(f'Printing the shapes for Genomic data (common PATNO) {gene_matched.shape},'+'\n'+ f'Shape of the HYS Dataset (common PATNO) {HYS_matched.shape}')
-
-# === Sort NHY visits and get first/last visit per patient ===
-HYS_matched['LAST_UPDATE'] = pd.to_datetime(HYS_matched['LAST_UPDATE'], errors='coerce')
-HYS_sorted = HYS_matched.sort_values(by=['PATNO', 'LAST_UPDATE']).reset_index(drop=True)
-HYS_filtered = HYS_sorted[HYS_sorted["NHY"] <= 5]
-HYS_last = HYS_filtered.groupby('PATNO').tail(1).reset_index(drop=True)
-HYS_first = HYS_filtered.groupby('PATNO').head(1).reset_index(drop=True)
-
-
-# === Select three classes of patients based on NHY severity ===
-patno_nhy_large = HYS_last[HYS_last["NHY"] > 2]
-selected_patnos1 = patno_nhy_large['PATNO'].sample(n=100, random_state=42)
-patno_nhy_med = HYS_last[(HYS_last["NHY"] == 1) | (HYS_last["NHY"] == 2)]
-selected_patnos2 = patno_nhy_med['PATNO'].sample(n=100, random_state=42)
-patno_nhy_small = HYS_last[HYS_last["NHY"] == 0]
-selected_patnos3 = patno_nhy_small['PATNO'].sample(n=100, random_state=42)
-
-patno_set = pd.concat([selected_patnos1, selected_patnos2, selected_patnos3]).reset_index(drop=True)
-valid_keys_patno = set(patno_set)
-
-# === Use first file to get gene ensemble IDs (column names) ===
-first_file = files[0]
-data_genecounts_first = pd.read_csv(os.path.join(gene_expression_path, first_file), sep='\t')
-gene_ensemble_IDs = data_genecounts_first["Name"].str.split('.').str[0]
-all_column = ["PATNO", "EVENT_ID", "NHY"] + gene_ensemble_IDs.tolist()
-
-# === Initialize final gene matrix ===
-gene_matrix = pd.DataFrame(columns=all_column)
-
-# === Main loop: Load TPM values for selected PATNOs ===
-for filename in tqdm(files, desc="Processing files"):
-    parts = filename.split('.')
-    patno_str = parts[1].strip()
-    if patno_str.isdigit():
-        patno = int(patno_str)
-    else:
-        continue
+        gene_mask = (self.X_data > threshold_count).sum(axis=0) >= (threshold_fraction * self.X_data.shape[0])
+        X_filtered = self.X_data.loc[:, gene_mask]
+        
+        # Step 2: Remove low-variance genes
+        var_thresh = VarianceThreshold(threshold=1e-5)
+        self.X_data_f = pd.DataFrame(
+            var_thresh.fit_transform(X_filtered),
+            columns=X_filtered.columns[var_thresh.get_support()],
+            index=X_filtered.index
+        )
     
-    event_ids = parts[2].strip()
-    if patno not in valid_keys_patno:
-        continue
-    
-    nhy_row = HYS_last.loc[HYS_last["PATNO"]==patno, "NHY"]
-    nhy = nhy_row.values[0] if not nhy_row.empty else -1
-    
-    my_row = dict.fromkeys(all_column, 0.0)
-    my_row.update({"PATNO": patno, "EVENT_ID": event_ids, "NHY": nhy})
-    
-    fullname = os.path.join(gene_expression_path, filename)
-    data_genecounts = pd.read_csv(fullname, sep='\t')
-    gene_TPM_map = dict(zip(data_genecounts["Name"].str.split('.').str[0], data_genecounts["TPM"]))
+    def select_features(self):
+        if self.selection_method == 'kbest':
+            selector = SelectKBest(score_func=f_classif, k=self.k)
+            
+        elif self.selection_method == 'lasso':
+            model = LogisticRegression(penalty='l1', solver='liblinear', C=1.0/self.alpha)
+            selector = SelectFromModel(model)
 
-    # Fill gene values for this row
-    for gene_id in gene_ensemble_IDs:
-        my_row[gene_id] = gene_TPM_map.get(gene_id, 0.0)  # default to 0 if missing
+        elif self.selection_method == 'rfe':
+            model = LogisticRegression(max_iter=1000)
+            selector = RFE(model, n_features_to_select=self.k)
 
-    gene_matrix = pd.concat([gene_matrix, pd.DataFrame([my_row], columns=gene_matrix.columns)], ignore_index=True)
-print("✓ Done")
+        elif self.selection_method == 'rf':
+            model = RandomForestClassifier(n_estimators=100, random_state=self.random_state)
+            model.fit(self.X_data_f, self.Y_data)
+            importances = model.feature_importances_
+            top_k_idx = importances.argsort()[::-1][:self.k]
+            self.selected_genes = self.X_data_f.columns[top_k_idx]
+            return self.X_data_f.iloc[:, top_k_idx]  # skip selector object
 
-# === Save matrix ===
-output_path = os.path.join(output_datapath, "gene_matrix.csv")
-gene_matrix.to_csv(output_path, index=False)
+        else:
+            raise ValueError(f"Unknown feature selection method: {self.selection_method}")
+        
+        # Fit and get selected gene names
+        selector.fit(self.X_data_f, self.Y_data)
+        self.selector = selector
+        selected_mask = selector.get_support()
+        self.selected_genes = self.X_data_f.columns[selected_mask]
+        return self.selected_genes.tolist()
+    
+    def diagnostic_scores_vals(self):
+        """
+        Compute F-statistics and p-values for the selected genes using ANOVA F-test.
+
+        Returns:
+            pd.DataFrame: A DataFrame with columns ['gene', 'F_score', 'p_value'], 
+                        sorted by F_score in descending order.
+        """
+        f_vals, p_vals = f_classif(self.X_data_f[self.selected_genes.tolist()], self.Y_data)
+        f_scores_df = pd.DataFrame({
+            "gene": self.selected_genes.tolist(),
+            "F_score": f_vals,
+            "p_value": p_vals
+        })
+        f_scores_df_sorted = f_scores_df.sort_values(by="F_score", ascending=False)
+        return f_scores_df_sorted
+    
+    def plot_feature_importance(self, top_n=20, figsize=(10, 6)):
+        """
+        Plot top selected genes with their importance scores based on the selected feature selection method.
+
+        Args:
+            top_n (int): Number of top genes to display. Default is 20.
+            figsize (tuple): Size of the plot.
+        """
+        if self.selected_genes is None:
+            raise ValueError("Run select_features() before plotting.")
+
+        plt.figure(figsize=figsize)
+
+        if self.selection_method == 'rf':
+            # For Random Forest, use feature importances directly
+            model = RandomForestClassifier(n_estimators=100, random_state=self.random_state)
+            model.fit(self.X_data_f, self.Y_data)
+            importances = model.feature_importances_
+            top_k_idx = importances.argsort()[::-1][:top_n]
+            gene_names = self.X_data_f.columns[top_k_idx]
+            scores = importances[top_k_idx]
+
+            plot_df = pd.DataFrame({"gene": gene_names, "importance": scores})
+            sns.barplot(data=plot_df, x="importance", y="gene", palette="viridis")
+            plt.title(f"Top {top_n} Genes by Random Forest Importance")
+
+        elif self.selection_method == 'kbest':
+            # For SelectKBest, compute F-statistics and use them
+            f_vals, _ = f_classif(self.X_data_f[self.selected_genes], self.Y_data)
+            plot_df = pd.DataFrame({
+                "gene": self.selected_genes,
+                "F_score": f_vals
+            }).sort_values(by="F_score", ascending=False).head(top_n)
+
+            sns.barplot(data=plot_df, x="F_score", y="gene", palette="Blues_r")
+            plt.title(f"Top {top_n} Genes by F-statistic (SelectKBest)")
+
+        elif self.selection_method in ['lasso', 'rfe']:
+            if hasattr(self.selector, 'estimator_'):
+                coefs = self.selector.estimator_.coef_[0]
+            elif hasattr(self.selector, 'coef_'):
+                coefs = self.selector.coef_[0]
+            else:
+                raise AttributeError("Lasso/RFE model coefficients not found.")
+            
+            gene_names = self.selected_genes
+            plot_df = pd.DataFrame({
+                "gene": gene_names,
+                "coef": coefs
+            }).sort_values(by="coef", key=abs, ascending=False).head(top_n)
+
+            sns.barplot(data=plot_df, x="coef", y="gene", palette="coolwarm")
+            plt.title(f"Top {top_n} Genes by Coefficient Magnitude ({self.selection_method})")
+
+        else:
+            raise NotImplementedError(f"Visualization not implemented for method: {self.selection_method}")
+
+        plt.xlabel("Score")
+        plt.ylabel("Gene")
+        plt.tight_layout()
+        plt.show()
+        
+    def plot_top_genes_lollipop(self, top_n=20):
+        """
+        Plot a ranked lollipop chart of top N genes selected by SelectKBest (F-test).
+
+        Args:
+            top_n (int): Number of top genes to display.
+        """
+        if self.selection_method != 'kbest':
+            raise NotImplementedError("Lollipop plot only implemented for 'kbest' method.")
+
+        f_vals, _ = f_classif(self.X_data_f[self.selected_genes], self.Y_data)
+        plot_df = pd.DataFrame({
+            "gene": self.selected_genes,
+            "F_score": f_vals
+        }).sort_values(by="F_score", ascending=False).head(top_n)
+
+        plt.figure(figsize=(10, 6))
+        plt.hlines(y=plot_df["gene"], xmin=0, xmax=plot_df["F_score"], color="skyblue")
+        plt.plot(plot_df["F_score"], plot_df["gene"], "o", color="steelblue")
+        plt.xlabel("F-statistic")
+        plt.ylabel("Gene")
+        plt.title(f"Top {top_n} Genes by F-statistic (SelectKBest)")
+        plt.grid(axis='x', linestyle='--', alpha=0.5)
+        plt.tight_layout()
+        plt.show()

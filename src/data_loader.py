@@ -220,9 +220,9 @@ class UPDRSReader:
 ##Add the class for generating MRI
 class LoadData:
     def __init__(self,input_path_updrs, input_path_gene_clinical, 
-                input_path_mri, mri_drop_list=None,  
-                group_NHY, mri_data, 
-                gene_data,
+                input_path_mri, mri_data,
+                mri_drop_list=None, group_NHY=True, 
+                gene_data=True, common_dataset=True,
                 test_size=0.2, validation_size = 0.15,
                 write_csv=False, output_path=None,
                 stratify_splits=False,
@@ -232,7 +232,8 @@ class LoadData:
         self.group_NHY = group_NHY
         self.mri_data = mri_data
         self.gene_data = gene_data
-        self.input_path_gene_clinical = input_path_gene_clinical 
+        self.input_path_gene_clinical = input_path_gene_clinical
+        self.common_dataset = common_dataset
         self.input_path_mri = input_path_mri
         self.mri_drop_list = mri_drop_list or ["MRIRSLT", "lh_MeanThickness", 
                                         "lh_WhiteSurfArea", "rhCerebralWhiteMatterVol", 
@@ -256,16 +257,21 @@ class LoadData:
         gene_data = pd.read_csv(self.input_path_gene_clinical + "gene_expression_summary.csv")
         nhy_latest = pd.read_csv(self.input_path_updrs + "clean_mds_updrs.csv")
         
-        clinical_data = gene_data[["PATNO", "EVENT_ID", "GENDER", "AGE", "EDUC_YRS"]]
-        clinical_data_bl = clinical_data[clinical_data["EVENT_ID"] == "BL"]
-        clinical_data_clean = clinical_data_bl[clinical_data_bl['AGE'].notna()]
+        use_demographic = not self.mri_data and not self.gene_data and not self.common_dataset
+        use_gene_only = self.gene_data and not self.mri_data and not self.common_dataset
+        use_mri_only = self.mri_data and not self.gene_data and not self.common_dataset
         
-        use_demographic = not self.mri_data and not self.gene_data
-        use_gene_only = self.gene_data and not self.mri_data
-        use_mri_only = self.mri_data and not self.gene_data
-        use_both = self.mri_data and self.gene_data
+        use_demographic_commondata = self.common_dataset and not self.mri_data and not self.gene_data
+        use_gene_only_commondata = self.common_dataset and self.gene_data and not self.mri_data
+        use_mri_only_commondata = self.common_dataset and self.mri_data and not self.gene_data
+        
+        use_all = self.mri_data and self.gene_data
         
         if use_demographic:
+            clinical_data = gene_data[["PATNO", "EVENT_ID", "GENDER", "AGE", "EDUC_YRS"]]
+            clinical_data_bl = clinical_data[clinical_data["EVENT_ID"] == "BL"]
+            clinical_data_clean = clinical_data_bl[clinical_data_bl['AGE'].notna()]
+        
             data_clean = clinical_data_clean.merge(nhy_latest, how='inner', on=["PATNO"])
             data_clean = data_clean[
                 data_clean["NHY"].notna() & (data_clean["NHY"] != 101)
@@ -284,7 +290,13 @@ class LoadData:
             return X_data, Y_data
 
         elif use_mri_only:
+
             mri_data = pd.read_csv(self.input_path_mri + "PDMRI_Clean_Merged_6_13_25.csv")
+
+            clinical_data = gene_data[["PATNO", "EVENT_ID", "GENDER", "AGE", "EDUC_YRS"]]
+            clinical_data_bl = clinical_data[clinical_data["EVENT_ID"] == "BL"]
+            clinical_data_clean = clinical_data_bl[clinical_data_bl['AGE'].notna()]
+
             clinical_bl_clean = clinical_data_clean.merge(nhy_latest, how='inner', on=["PATNO"])
             mri_data_clean = mri_data.merge(clinical_bl_clean, how='inner', on=["PATNO"])
             mri_data_clean = mri_data_clean[
@@ -304,9 +316,10 @@ class LoadData:
             print("Y class distribution:", Y_data.value_counts().to_dict())
             return X_data, Y_data
         
-        elif use_both:
-            #Adding Veena's script for merging all three datasets
+        elif self.common_dataset:
+
             mri_data = pd.read_csv(self.input_path_mri + "PDMRI_Clean_Merged_6_13_25.csv")
+        
             mri_data_bl  = mri_data.query("EVENT_ID == 'BL'")
             gene_data_bl  = gene_data.query("EVENT_ID == 'BL'")
             gene_data_bl = gene_data_bl[gene_data_bl["AGE"].notna()].copy()
@@ -338,18 +351,32 @@ class LoadData:
             baseline_merged = baseline_merged[baseline_merged["NHY"].notna() & (baseline_merged["NHY"] != 101)]
 
             mri_drop_base = ['PATNO', "NHY", "NHY_BL"] + self.mri_drop_list
-            X_data = baseline_merged.drop(columns=[
+            X_data_all = baseline_merged.drop(columns=[
                 col for col in baseline_merged.columns
                 if col.startswith("EVENT_ID") 
                 or col in mri_drop_base])
             
-            X_data['GENDER'] = X_data['GENDER'].map({"Female": 1, "Male": 0})
+            X_data_all['GENDER'] = X_data_all['GENDER'].map({"Female": 1, "Male": 0})
             Y_data = baseline_merged["NHY"].copy()
             if self.group_NHY:
                 Y_data = self.group_nhy(Y_data)
-            print(f"X shape: {X_data.shape}, Y shape: {Y_data.shape}")
+            print(f"X shape: {X_data_all.shape}, Y shape: {Y_data.shape}")
             print("Y class distribution:", Y_data.value_counts().to_dict())
-            return X_data, Y_data
+            
+            if use_demographic_commondata:
+                X_data = X_data_all[["GENDER", "AGE", "EDUC_YRS"]]
+                Y_data = Y_data
+                return X_data, Y_data
+            
+            elif use_mri_only_commondata:
+                mri_cols = [col for col in mri_data.columns if col not in self.mri_drop_list]
+                columns_load = ["GENDER", "AGE", "EDUC_YRS"] + mri_cols
+                X_data = X_data_all[columns_load]
+                return X_data, Y_data
+                        
+            elif use_all:
+                X_data = X_data_all
+                return X_data, Y_data
 
         elif use_gene_only:
             raise ValueError("Data merging for gene expression + demographic data not implemented")
