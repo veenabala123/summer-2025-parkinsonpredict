@@ -31,7 +31,7 @@ To access the data, you should request the data from PPMI directly.
 To use this project, clone the repository and run the Jupyter notebooks provided. The notebooks contain the code for data preprocessing, model training, and evaluation. Make sure to have the following required libraries installed.
 
 ## Contributions
-
+Thank you for considering contributing to this project. We welcome contributions from everyone. Please contact authors for questions and comments.
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
