@@ -24,9 +24,9 @@ from read_Parkinsonpredict import ReadData, LoadData
 from ml_models import MlModels
 
 # --- Load data
-mri_data = pd.read_csv("/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/finalised_dataset/PDMRI_Clean_Merged_6_13_25.csv")
-gene_data = pd.read_csv("/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/finalised_dataset/gene_expression_summary.csv")
-nhy_latest = pd.read_csv("/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/finalised_dataset/clean_mds_updrs.csv")
+mri_data = pd.read_csv("/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/clean_data/PDMRI_Clean_Merged_6_13_25.csv")
+gene_data = pd.read_csv("/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/clean_data/gene_expression_summary.csv")
+nhy_latest = pd.read_csv("/Users/pushpita/Documents/Erdos_bootcamp/our_project/Data/clean_data/clean_mds_updrs.csv")
 
 mri_data_bl  = mri_data.query("EVENT_ID == 'BL'")
 gene_data_bl  = gene_data.query("EVENT_ID == 'BL'")

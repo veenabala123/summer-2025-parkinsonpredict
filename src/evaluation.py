@@ -112,31 +112,42 @@ class Evaluate:
         y_true = self.y_test.values.ravel()
         return confusion_matrix(y_true, preds)
 
+
     def get_auc_scores(self, class_list=None):
-        
         y_true = self.y_test.values.ravel()
-    
+
         if not hasattr(self.my_model, "predict_proba"):
             raise NotImplementedError("Model does not support predict_proba needed for AUC.")
+
+        # Get prediction probabilities
+        y_score = self.predict_proba(self.x_test)
+
+        # If class_list is not provided, infer it
         if class_list is None:
             class_list = np.unique(y_true).tolist()
         elif len(class_list) == 0:
             raise ValueError("Class list is empty, pass something!")
-        
-        y_score = self.predict_proba(self.x_test)
-        y_true_bin = label_binarize(y_true, classes=class_list)
-        n_classes = y_true_bin.shape[1]
-        
-        if y_score.shape[1] != y_true_bin.shape[1]:
-            raise ValueError("Mismatch in number of classes between prediction and ground truth.")
-        
+
+        n_classes = len(class_list)
+
         fpr, tpr, roc_auc = {}, {}, {}
-        for i in range(n_classes):
-            fpr[i], tpr[i], _ = roc_curve(y_true_bin[:, i], y_score[:, i])
-            roc_auc[i] = auc(fpr[i], tpr[i])
-        
-        if n_classes > 2:
-            auc_score = roc_auc_score(y_true, y_score, multi_class='ovr')
-        else:
+
+        if n_classes == 2:
+            # Binary classification
+            fpr[1], tpr[1], _ = roc_curve(y_true, y_score[:, 1])
+            roc_auc[1] = auc(fpr[1], tpr[1])
             auc_score = roc_auc_score(y_true, y_score[:, 1])
+        else:
+            # Multiclass classification
+            y_true_bin = label_binarize(y_true, classes=class_list)
+
+            if y_score.shape[1] != y_true_bin.shape[1]:
+                raise ValueError("Mismatch in number of classes between prediction and ground truth.")
+
+            for i in range(n_classes):
+                fpr[i], tpr[i], _ = roc_curve(y_true_bin[:, i], y_score[:, i])
+                roc_auc[i] = auc(fpr[i], tpr[i])
+
+            auc_score = roc_auc_score(y_true, y_score, multi_class='ovr')
+
         return {'fpr': fpr, 'tpr': tpr, 'roc_auc': roc_auc, 'auc_score': auc_score}

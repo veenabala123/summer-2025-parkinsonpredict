@@ -19,7 +19,7 @@ from sklearn.model_selection import GridSearchCV,RandomizedSearchCV
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from xgboost import XGBClassifier
 
-sys.path.append("/Users/pushpita/Documents/Erdos_bootcamp/our_project/code_repo/src/all")  # adjust path as needed
+sys.path.append("/Users/pushpita/Documents/Erdos_bootcamp/our_project/code_repo/src")  # adjust path as needed
 from read_Parkinsonpredict import ReadData, LoadData
 from ml_models import MlModels
 
