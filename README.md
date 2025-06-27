@@ -29,15 +29,19 @@ KPIs:
 ## 🛠️ Project Structure
 
 ```
-.
-├── data/                   # Generated .csv and/or .npz data files
+summer-2025-parkinsonpredict
+├── initial_feature_selection/
+    ├──feature_engineering.py #select best features for different models
+    ├──gene_patientmatrix.py  #making gene matrix from 50000 genes               
 ├── src/
-│   ├── solver.py           # Numerical PDE solver using Euler scheme
-│   ├── model.py            # CNN model definition
-│   ├── data_generator.py   # Data loader and preprocessor
-│   └── train.py            # Training pipeline
+│   ├── config.py           
+│   ├── model.py            
+│   ├── data_loader.py   
+│   └── evaluation.py            
 ├── notebooks/
-│   └── heat_eq.ipynb     # Notebook for training, predictions and plotting
+│   ├── Feature_Selection     
+    ├── data_exploration      
+    ├── models                #notebooks for different models, training and testing
 ├── README.md
 ```
 
