@@ -20,7 +20,7 @@ This repository contains code for a project that aims to predict the progression
 - 🎯 Recall : Ensures model correctly identifies patients with PD.
 - 📌 Feature Importance : Which features are more effective.
   
-## Prerequisites
+## 📦 Prerequisites
 - Access to the Parkinson's Progression Markers Initiative (PPMI) dataset. The data sets used in this repo are not available publicly.
 - Python 3.10+
 - NumPy
@@ -47,15 +47,6 @@ summer-2025-parkinsonpredict
     ├── models                #notebooks for different models, training and testing
 ├── README.md
 ```
-
-## 📦 Dependencies
-
-- Python 3.10+
-- TensorFlow 2.x
-- NumPy
-- Pandas
-- Matplotlib
-- scikit-learn
 
 ## ⚙️ Usage
 To access the data, you should request the data from PPMI directly.
