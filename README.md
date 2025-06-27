@@ -26,6 +26,30 @@ KPIs:
 - Jupyter Notebook.
 - Required libraries: pandas, numpy, scikit-learn, matplotlib, seaborn, tensorflow.
 
+## 🛠️ Project Structure
+
+```
+.
+├── data/                   # Generated .csv and/or .npz data files
+├── src/
+│   ├── solver.py           # Numerical PDE solver using Euler scheme
+│   ├── model.py            # CNN model definition
+│   ├── data_generator.py   # Data loader and preprocessor
+│   └── train.py            # Training pipeline
+├── notebooks/
+│   └── heat_eq.ipynb     # Notebook for training, predictions and plotting
+├── README.md
+```
+
+## 📦 Dependencies
+
+- Python 3.10+
+- TensorFlow 2.x
+- NumPy
+- Pandas
+- Matplotlib
+- scikit-learn
+
 ## Usage
 To access the data, you should request the data from PPMI directly.
 To use this project, clone the repository and run the Jupyter notebooks provided. The notebooks contain the code for data preprocessing, model training, and evaluation. Make sure to have the following required libraries installed.
