@@ -54,7 +54,5 @@ To use this project, clone the repository and run the Jupyter notebooks provided
 
 ## 🤝 Contributions
 Thank you for considering contributing to this project. We welcome contributions from everyone. Please contact authors for questions and comments.
-## 📄 License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 
