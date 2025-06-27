@@ -22,9 +22,12 @@ This repository contains code for a project that aims to predict the progression
   
 ## Prerequisites
 - Access to the Parkinson's Progression Markers Initiative (PPMI) dataset. The data sets used in this repo are not available publicly.
-- Python 3.x.
-- Jupyter Notebook.
-- Required libraries: pandas, numpy, scikit-learn, matplotlib, seaborn, tensorflow.
+- Python 3.10+
+- NumPy
+- Seaborn
+- Pandas
+- Matplotlib
+- scikit-learn
 
 ## 🛠️ Project Structure
 
