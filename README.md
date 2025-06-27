@@ -10,10 +10,12 @@ Parkinson’s disease (PD) is the second most common neurodegenerative disease, 
 
 This repository contains code for a project that aims to predict the progression of Parkinson's disease using machine learning techniques. The project uses data from the Parkinson’s Progression Markers Initiative (PPMI) open‑access repository. A patient’s baseline genetic profile + MRI biomarkers and demographics, is used to predict the  MDS‑UPDRS Part III (ΔUPDRS III) score (a clinically meaningful measure of motor deterioration).
 
-
-
-
-
+Stakeholders:
+- People with Parkinson’s Disease and their caretakers.
+- Pharma and biotech teams running Parkinson’s trials.
+- Fellow Researchers working in this field.
+- Neurologists.
+  
 ## Prerequisites
 - Python 3.x
 - Jupyter Notebook
