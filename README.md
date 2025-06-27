@@ -36,4 +36,3 @@ To use this project, clone the repository and run the Jupyter notebooks provided
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 
-You can find the detailed project plan and notes in the [Google Doc here](https://docs.google.com/document/d/1Pox_YoBK9GUNJZH54kti41NTPybKZ4D_AR0d6gl4DaQ/edit?tab=t.0).
