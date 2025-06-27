@@ -15,6 +15,10 @@ Stakeholders:
 - Pharma and biotech teams running Parkinson’s trials.
 - Fellow Researchers working in this field.
 - Neurologists.
+
+KPIs:
+- Recall : Ensures model correctly identifies patients with PD.
+- Feature Importance : Which features are more effective.
   
 ## Prerequisites
 - Python 3.x
