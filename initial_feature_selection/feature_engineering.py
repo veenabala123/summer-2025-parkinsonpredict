@@ -188,7 +188,7 @@ class Feature_selection:
         plt.plot(plot_df["F_score"], plot_df["gene"], "o", color="steelblue")
         plt.xlabel("F-statistic")
         plt.ylabel("Gene")
-        plt.title(f"Top {top_n} Genes by F-statistic (SelectKBest)")
+        # plt.title(f"Top {top_n} Genes by F-statistic (SelectKBest)")
         plt.grid(axis='x', linestyle='--', alpha=0.5)
         plt.tight_layout()
         plt.show()
